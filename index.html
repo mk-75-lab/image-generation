@@ -1,0 +1,2075 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spellbound Crypt - 秘匿魔導書プロンプト保管庫</title>
+    <style>
+        :root {
+            --bg-color: #0c0e12;
+            --text-color: #cdd6f4;
+            --panel-bg: #181825;
+            --panel-header: #1e1e2e;
+            --accent: #cba6f7;
+            --accent-hover: #b4befe;
+            --border: #313244;
+            --positive: #a6e3a1;
+            --positive-bg: rgba(166, 227, 161, 0.08);
+            --negative: #f38ba8;
+            --negative-bg: rgba(243, 139, 168, 0.08);
+            --tag-bg: #313244;
+            --tag-lora: #fab387;
+            --tag-model: #89b4fa;
+            --tag-site: #f9e2af;
+            --star-color: #f9e2af;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ヘッダー */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 26px;
+            height: 26px;
+            fill: var(--accent);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            background: linear-gradient(45deg, var(--accent), #f5c2e7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stats-badge {
+            background-color: var(--border);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: bold;
+            color: var(--accent-hover);
+        }
+
+        /* メインレイアウト */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            padding: 16px;
+            gap: 16px;
+        }
+
+        /* 左パネル：入力・画像ドラッグ */
+        .left-sidebar {
+            width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .card-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .panel-header {
+            background: var(--panel-header);
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: bold;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #f5e0dc;
+        }
+
+        .panel-header-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-header svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .panel-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+        }
+
+        textarea {
+            width: 100%;
+            height: 140px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            box-sizing: border-box;
+            resize: none;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
+        }
+
+        /* 画像ドロップゾーン */
+        .dropzone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            background: var(--bg-color);
+            transition: all 0.2s;
+            position: relative;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .dropzone.dragover {
+            border-color: var(--accent);
+            background: rgba(203, 166, 247, 0.05);
+        }
+
+        .dropzone-text {
+            font-size: 0.8rem;
+            color: #6c7086;
+        }
+
+        .dropzone-preview {
+            width: 100%;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .remove-temp-img {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .primary-button {
+            background: var(--accent);
+            color: var(--bg-color);
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .primary-button:hover {
+            background: var(--accent-hover);
+        }
+
+        .primary-button:active {
+            transform: scale(0.98);
+        }
+
+        .button-group-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .secondary-button {
+            background: var(--border);
+            color: var(--text-color);
+            border: 1px solid rgba(255,255,255,0.03);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .secondary-button:hover {
+            background: #45475a;
+        }
+
+        /* 右パネル：検索と一覧 */
+        .content-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow: hidden;
+        }
+
+        .search-area {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        .search-wrapper svg {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            fill: #6c7086;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px 10px 40px;
+            box-sizing: border-box;
+            outline: none;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .filter-tab {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            color: #a6adc8;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .filter-tab.active {
+            background: var(--accent);
+            color: var(--bg-color);
+            border-color: var(--accent);
+        }
+
+        .filter-tab svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* スクロールリスト */
+        .cards-viewport {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .prompt-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        /* 呪文カード */
+        .prompt-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .prompt-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        /* カードの画像エリア */
+        .card-image-wrapper {
+            width: 100%;
+            height: 160px;
+            background: #11111b;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .prompt-card:hover .card-image {
+            transform: scale(1.05);
+        }
+
+        .card-no-image {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #45475a;
+        }
+
+        .card-no-image svg {
+            width: 36px;
+            height: 36px;
+            fill: currentColor;
+        }
+
+        .card-body {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #6c7086;
+        }
+
+        .card-model {
+            color: var(--tag-model);
+            font-weight: bold;
+            font-size: 0.8rem;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .card-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(15, 16, 21, 0.75);
+            padding: 4px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+            border: 1px solid var(--border);
+            z-index: 2;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            padding: 4px;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a6adc8;
+            transition: color 0.15s, background-color 0.15s;
+        }
+
+        .icon-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: var(--text-color);
+        }
+
+        .icon-btn.star-active {
+            color: var(--star-color);
+        }
+
+        .icon-btn.delete-btn-card:hover {
+            color: var(--negative);
+            background-color: rgba(243, 139, 168, 0.2);
+        }
+
+        .icon-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        .card-text-preview {
+            font-size: 0.8rem;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .preview-label {
+            font-weight: bold;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .preview-content {
+            background: rgba(0,0,0,0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .preview-pos {
+            color: var(--positive);
+            border-left: 3px solid var(--positive);
+        }
+
+        .preview-neg {
+            color: var(--negative);
+            border-left: 3px solid var(--negative);
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: auto;
+            padding-top: 4px;
+        }
+
+        .pill {
+            font-size: 0.68rem;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .pill.tag-lora {
+            background-color: rgba(250, 179, 135, 0.1);
+            color: var(--tag-lora);
+            border: 1px solid rgba(250, 179, 135, 0.2);
+        }
+
+        .pill.tag-model {
+            background-color: rgba(137, 180, 250, 0.1);
+            color: var(--tag-model);
+            border: 1px solid rgba(137, 180, 250, 0.2);
+        }
+
+        .pill.tag-site {
+            background-color: rgba(249, 226, 175, 0.1);
+            color: var(--tag-site);
+            border: 1px solid rgba(249, 226, 175, 0.2);
+        }
+
+        .pill.tag-custom {
+            background-color: rgba(203, 166, 247, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(203, 166, 247, 0.2);
+        }
+
+        .card-memo-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.72rem;
+            color: #a6adc8;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-memo-indicator svg {
+            width: 11px;
+            height: 11px;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+
+        /* 詳細モーダル */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-window {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 95%;
+            max-width: 900px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            animation: modalFadeIn 0.2s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { transform: scale(0.97); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-topbar {
+            background: var(--panel-header);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title-area {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .modal-date {
+            font-size: 0.78rem;
+            color: #6c7086;
+        }
+
+        .modal-model-input {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--tag-model);
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 4px 8px;
+            width: 80%;
+            outline: none;
+        }
+
+        .modal-model-input:focus {
+            border-color: var(--accent);
+        }
+
+        /* モーダルの中身（左右分割） */
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .modal-grid {
+                grid-template-columns: 1fr;
+                overflow-y: auto;
+            }
+            .modal-left-column {
+                border-right: none !important;
+                border-bottom: 1px solid var(--border);
+                max-height: 300px;
+            }
+        }
+
+        .modal-left-column {
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            background: #11111b;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .modal-image-display {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            cursor: zoom-in;
+        }
+
+        .modal-no-image-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #45475a;
+            gap: 12px;
+        }
+
+        .modal-no-image-placeholder svg {
+            width: 64px;
+            height: 64px;
+            fill: currentColor;
+        }
+
+        /* モーダル内画像への直ドラップ */
+        .modal-image-edit-zone {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            background: rgba(15, 16, 21, 0.85);
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #a6adc8;
+            backdrop-filter: blur(4px);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-image-edit-zone:hover, .modal-image-edit-zone.dragover {
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .modal-right-column {
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .modal-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .modal-section-header h3 {
+            margin: 0;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modal-section-header h3 svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .modal-pos-title { color: var(--positive); }
+        .modal-neg-title { color: var(--negative); }
+        .modal-memo-title { color: #f5e0dc; }
+
+        .clipboard-badge {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            color: #a6adc8;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .clipboard-badge:hover {
+            background: var(--border);
+            color: var(--text-color);
+        }
+
+        /* 編集エリア */
+        .modal-edit-area {
+            width: 100%;
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .modal-edit-area:focus {
+            border-color: var(--accent);
+        }
+
+        .edit-pos-prompt {
+            border-left: 4px solid var(--positive);
+            height: 120px;
+        }
+
+        .edit-neg-prompt {
+            border-left: 4px solid var(--negative);
+            height: 80px;
+        }
+
+        .memo-textarea {
+            width: 100%;
+            height: 70px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            box-sizing: border-box;
+            resize: none;
+            outline: none;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        .memo-textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .settings-grid-edit {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .edit-setting-box {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .edit-setting-label {
+            font-size: 0.72rem;
+            color: #6c7086;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .edit-setting-input {
+            background: transparent;
+            border: none;
+            color: var(--accent-hover);
+            font-family: monospace;
+            font-size: 0.85rem;
+            outline: none;
+            width: 100%;
+        }
+
+        .tags-manager {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .tags-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tags-input-row input {
+            flex: 1;
+        }
+
+        .modal-footer {
+            background: var(--panel-header);
+            padding: 12px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* ライトボックス（フル画像ズーム） */
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+            cursor: zoom-out;
+        }
+
+        .lightbox-overlay.open {
+            display: flex;
+        }
+
+        .lightbox-image {
+            max-width: 95%;
+            max-height: 95vh;
+            object-fit: contain;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            border-radius: 4px;
+            animation: zoomFadeIn 0.15s ease-out;
+        }
+
+        @keyframes zoomFadeIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* 隠し要素 */
+        #file-input { display: none; }
+        #modal-img-file-input { display: none; }
+
+        /* トースト */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--accent);
+            color: var(--bg-color);
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #585b70; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-area">
+        <svg class="logo-icon" viewBox="0 0 24 24">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+        <h1>Spellbound Crypt</h1>
+    </div>
+    <div class="header-actions">
+        <span class="stats-badge" id="vault-stats">0 件の呪文</span>
+    </div>
+</header>
+
+<div class="main-container">
+    <!-- 左ペイン: 入力・画像アップ -->
+    <div class="left-sidebar">
+        <!-- 入力パネル -->
+        <div class="card-panel">
+            <div class="panel-header">
+                <div class="panel-header-title">
+                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    呪文と画像の登録
+                </div>
+            </div>
+            <div class="panel-body">
+                <textarea id="raw-input" placeholder="Civitai、ちちぷい、NovelAIなどの生成データ、または自作の呪文をここに貼り付けてください..."></textarea>
+                
+                <!-- ドラッグゾーン（ペースト対応） -->
+                <div class="dropzone" id="drop-zone" title="画像をここにドラッグ、クリックして選択、またはCtrl+Vで貼り付け">
+                    <button class="remove-temp-img" id="remove-temp-img-btn" title="画像を削除">&times;</button>
+                    <svg id="drop-zone-icon" style="width:28px;height:28px;fill:#6c7086" viewBox="0 0 24 24">
+                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                    </svg>
+                    <span class="dropzone-text" id="drop-zone-text">画像のドラッグ、選択、貼り付け (Ctrl+V)</span>
+                    <img src="" alt="Preview" class="dropzone-preview" id="drop-zone-preview">
+                </div>
+                
+                <button class="primary-button" id="parse-save-btn">
+                    <svg style="width:18px;height:18px;fill:currentColor" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                    解析してローカルに保存
+                </button>
+            </div>
+        </div>
+
+        <!-- 管理パネル -->
+        <div class="card-panel">
+            <div class="panel-header">
+                <div class="panel-header-title">
+                    <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                    データベース管理
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="button-group-row">
+                    <button class="secondary-button" id="backup-export">
+                        バックアップ
+                    </button>
+                    <button class="secondary-button" id="backup-import">
+                        復元 (JSON)
+                    </button>
+                </div>
+                <input type="file" id="file-input" accept=".json">
+                <input type="file" id="modal-img-file-input" accept="image/*">
+            </div>
+        </div>
+    </div>
+
+    <!-- 右ペイン: 検索と一覧 -->
+    <div class="content-panel">
+        <div class="search-area">
+            <div class="search-wrapper">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" id="search-input" placeholder="プロンプト、LoRA、モデル、タグ、サイト名で検索...">
+            </div>
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">すべて</button>
+                <button class="filter-tab" data-filter="starred" style="color:var(--star-color)">
+                    <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                    お気に入り
+                </button>
+            </div>
+        </div>
+
+        <div class="cards-viewport">
+            <div class="prompt-grid" id="prompt-grid"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 詳細モーダル -->
+<div class="modal-overlay" id="detail-modal">
+    <div class="modal-window">
+        <div class="modal-topbar">
+            <div class="modal-title-area">
+                <span class="modal-date" id="modal-date"></span>
+                <input type="text" class="modal-model-input" id="modal-model-edit" placeholder="モデル名を入力">
+            </div>
+            <button class="icon-btn" id="modal-close-btn" style="color:#a6adc8; padding:8px" title="閉じる">
+                <svg style="width:20px;height:20px" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+
+        <div class="modal-grid">
+            <!-- モーダル左：画像表示 -->
+            <div class="modal-left-column" id="modal-img-col">
+                <img src="" alt="Prompt Visual" class="modal-image-display" id="modal-image-view">
+                <div class="modal-no-image-placeholder" id="modal-no-image-view">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                    </svg>
+                    <span style="font-size:0.9rem; font-weight:bold;">登録画像はありません</span>
+                </div>
+                <div class="modal-image-edit-zone" id="modal-img-edit-zone">
+                    ここをクリック、ペースト (Ctrl+V)、またはドラッグして画像を変更
+                </div>
+            </div>
+
+            <!-- モーダル右：編集データ -->
+            <div class="modal-right-column">
+                <!-- Positive -->
+                <div>
+                    <div class="modal-section-header">
+                        <h3 class="modal-pos-title">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                            ポジティブプロンプト (呪文)
+                        </h3>
+                        <button class="clipboard-badge" id="copy-pos-btn">ポジティブをコピー</button>
+                    </div>
+                    <textarea class="modal-edit-area edit-pos-prompt" id="modal-pos-edit" placeholder="ポジティブプロンプトを入力..."></textarea>
+                </div>
+
+                <!-- Negative -->
+                <div>
+                    <div class="modal-section-header">
+                        <h3 class="modal-neg-title">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>
+                            ネガティブプロンプト (除外呪文)
+                        </h3>
+                        <button class="clipboard-badge" id="copy-neg-btn">ネガティブをコピー</button>
+                    </div>
+                    <textarea class="modal-edit-area edit-neg-prompt" id="modal-neg-edit" placeholder="ネガティブプロンプトを入力..."></textarea>
+                </div>
+
+                <!-- タグ一覧 -->
+                <div class="card-tags" id="modal-tags"></div>
+
+                <!-- メモ -->
+                <div>
+                    <div class="modal-section-header">
+                        <h3 class="modal-memo-title">
+                            <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            個人メモ・調整ノート
+                        </h3>
+                    </div>
+                    <textarea class="memo-textarea" id="modal-memo" placeholder="推奨されるLoRA強度、表情や衣装のバリエーション、テスト結果などを自由にメモできます..."></textarea>
+                </div>
+
+                <!-- タグ管理 -->
+                <div class="tags-manager">
+                    <div class="modal-section-header">
+                        <h3 style="color:#cba6f7">
+                            <svg viewBox="0 0 24 24"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
+                            カスタムタグの追加・管理
+                        </h3>
+                    </div>
+                    <div class="tags-input-row">
+                        <input type="text" id="new-tag-input" placeholder="新規タグを入力 (例: ファンタジー, サイバーパンク)">
+                        <button class="secondary-button" id="add-tag-btn" style="padding:0 16px">追加</button>
+                    </div>
+                </div>
+
+                <!-- パラメータ編集 -->
+                <div>
+                    <div class="modal-section-header">
+                        <h3 style="color:#a6adc8">
+                            <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+                            生成パラメータ（直接編集可能）
+                        </h3>
+                    </div>
+                    <div class="settings-grid-edit" id="modal-settings-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="primary-button" id="modal-save-btn">変更を保存して閉じる</button>
+        </div>
+    </div>
+</div>
+
+<!-- ライトボックス（拡大オーバーレイ） -->
+<div class="lightbox-overlay" id="lightbox">
+    <img src="" alt="Enlarged Visual" class="lightbox-image" id="lightbox-img">
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast">コピーしました！</div>
+
+<script>
+    const DB_NAME = 'PromptVaultDB_v4';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'prompts';
+    
+    let db = null;
+    let prompts = [];
+    let currentEditingId = null;
+    let activeFilter = 'all';
+    let tempImageData = null;
+
+    // --- DOM Elements ---
+    const rawInput = document.getElementById('raw-input');
+    const parseSaveBtn = document.getElementById('parse-save-btn');
+    const promptGrid = document.getElementById('prompt-grid');
+    const vaultStats = document.getElementById('vault-stats');
+    const searchInput = document.getElementById('search-input');
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    
+    // Backup & Import
+    const btnExport = document.getElementById('backup-export');
+    const btnImport = document.getElementById('backup-import');
+    const fileInput = document.getElementById('file-input');
+    const modalImgFileInput = document.getElementById('modal-img-file-input');
+
+    // Drag-Drop Zone
+    const dropZone = document.getElementById('drop-zone');
+    const dropZonePreview = document.getElementById('drop-zone-preview');
+    const dropZoneIcon = document.getElementById('drop-zone-icon');
+    const dropZoneText = document.getElementById('drop-zone-text');
+    const removeTempImgBtn = document.getElementById('remove-temp-img-btn');
+
+    // Modal
+    const modal = document.getElementById('detail-modal');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modalPosEdit = document.getElementById('modal-pos-edit');
+    const modalNegEdit = document.getElementById('modal-neg-edit');
+    const modalModelEdit = document.getElementById('modal-model-edit');
+    const modalDate = document.getElementById('modal-date');
+    const modalTags = document.getElementById('modal-tags');
+    const modalMemo = document.getElementById('modal-memo');
+    const modalSettingsGrid = document.getElementById('modal-settings-grid');
+    const newTagInput = document.getElementById('new-tag-input');
+    const addTagBtn = document.getElementById('add-tag-btn');
+    const modalSaveBtn = document.getElementById('modal-save-btn');
+    
+    const copyPosBtn = document.getElementById('copy-pos-btn');
+    const copyNegBtn = document.getElementById('copy-neg-btn');
+    const toast = document.getElementById('toast');
+
+    // Modal Image
+    const modalImageView = document.getElementById('modal-image-view');
+    const modalNoImageView = document.getElementById('modal-no-image-view');
+    const modalImgEditZone = document.getElementById('modal-img-edit-zone');
+
+    // Lightbox
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+
+    // --- IndexedDB Core Initialization ---
+    function initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onupgradeneeded = (e) => {
+                const database = e.target.result;
+                if (!database.objectStoreNames.contains(STORE_NAME)) {
+                    database.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                }
+            };
+            request.onsuccess = (e) => {
+                db = e.target.result;
+                resolve();
+            };
+            request.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    // --- DB Wrappers ---
+    function getAllFromDB() {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    function putToDB(item) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.put(item);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    function removeFromDB(id) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.delete(id);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // --- LocalStorageからIndexedDBへのデータ自動移行ロジック ---
+    async function migrateLocalStorage() {
+        const legacyKey = 'civitai_chichipu_vault_v3';
+        const legacyData = localStorage.getItem(legacyKey);
+        if (legacyData) {
+            try {
+                const parsed = JSON.parse(legacyData);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    for (const item of parsed) {
+                        await putToDB(item);
+                    }
+                    localStorage.removeItem(legacyKey);
+                    showToast("旧LocalStorageからデータを移行しました！");
+                }
+            } catch (err) {
+                console.error("Migration failed:", err);
+            }
+        }
+    }
+
+    // --- Toast & Utility Helpers ---
+    function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 1500);
+    }
+
+    function copyToClipboard(text) {
+        const tempTextarea = document.createElement('textarea');
+        tempTextarea.value = text;
+        document.body.appendChild(tempTextarea);
+        tempTextarea.select();
+        try {
+            document.execCommand('copy');
+            showToast("クリップボードにコピーしました！");
+        } catch (err) {
+            console.error('Failed to copy: ', err);
+        }
+        document.body.removeChild(tempTextarea);
+    }
+
+    // --- 画像の自動圧縮＆軽量化リサイズ処理 (シニア向け最適化) ---
+    function resizeAndCompressImage(file) {
+        return new Promise((resolve) => {
+            if (!file.type.startsWith('image/')) {
+                resolve(null);
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1000; // 長辺最大1000pxにリサイズして爆速に
+                    const MAX_HEIGHT = 1000;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // 0.8の画質でJPEG圧縮して容量を1/10以下に削減！
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataUrl);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function processImageFile(file) {
+        const compressedData = await resizeAndCompressImage(file);
+        if (compressedData) {
+            tempImageData = compressedData;
+            dropZonePreview.src = tempImageData;
+            dropZonePreview.style.display = 'block';
+            dropZoneIcon.style.display = 'none';
+            dropZoneText.style.display = 'none';
+            removeTempImgBtn.style.display = 'flex';
+        } else {
+            alert('画像ファイルを処理できませんでした。');
+        }
+    }
+
+    function clearTempImage() {
+        tempImageData = null;
+        dropZonePreview.src = '';
+        dropZonePreview.style.display = 'none';
+        dropZoneIcon.style.display = 'block';
+        dropZoneText.style.display = 'block';
+        removeTempImgBtn.style.display = 'none';
+    }
+
+    // --- ドラッグ＆ドロップ、ペーストのリスナー(新規登録エリア) ---
+    dropZone.onclick = (e) => {
+        if (e.target.id === 'remove-temp-img-btn') return;
+        const fileChooser = document.createElement('input');
+        fileChooser.type = 'file';
+        fileChooser.accept = 'image/*';
+        fileChooser.onchange = (ev) => {
+            if (ev.target.files[0]) processImageFile(ev.target.files[0]);
+        };
+        fileChooser.click();
+    };
+
+    dropZone.ondragover = (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    };
+
+    dropZone.ondragleave = () => {
+        dropZone.classList.remove('dragover');
+    };
+
+    dropZone.ondrop = (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            processImageFile(e.dataTransfer.files[0]);
+        }
+    };
+
+    // クリップボードからの画像ペースト(Ctrl+V)を検知
+    window.addEventListener('paste', (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let item of items) {
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                
+                // モーダル起動時はモーダルへ、通常時はプレビューゾーンへ自動で格納
+                if (modal.classList.contains('open') && currentEditingId !== null) {
+                    resizeAndCompressImage(file).then((compressed) => {
+                        if (compressed) {
+                            const targetPrompt = prompts.find(p => p.id === currentEditingId);
+                            if (targetPrompt) {
+                                targetPrompt.image = compressed;
+                                modalImageView.src = compressed;
+                                modalImageView.style.display = 'block';
+                                modalNoImageView.style.display = 'none';
+                                saveToDBSync(targetPrompt);
+                                showToast("詳細モーダルに画像を貼り付けました！");
+                            }
+                        }
+                    });
+                } else {
+                    processImageFile(file);
+                    showToast("プレビューに画像を貼り付けました！");
+                }
+                break;
+            }
+        }
+    });
+
+    // --- 超マルチパーサー ---
+    function parsePromptText(text) {
+        const trimmed = text.trim();
+        if (!trimmed) return null;
+
+        const data = {
+            id: Date.now(),
+            date: new Date().toLocaleDateString('ja-JP'),
+            positive: '',
+            negative: '',
+            model: '手動登録モデル',
+            tags: [],
+            settings: {
+                'Steps': '20',
+                'Sampler': 'Euler a',
+                'CFG scale': '7',
+                'Seed': '-1',
+                'Size': '512x512'
+            },
+            starred: false,
+            memo: '',
+            image: tempImageData || null
+        };
+
+        // 画像のみの登録時におけるダミー文字列のバグ排除
+        if (trimmed === "(登録テキストなし)") {
+            data.positive = "";
+            data.tags.push({ type: 'site', name: '手動登録' });
+            return data;
+        }
+
+        let siteSource = 'その他';
+
+        // 1. ちちぷい ＆ 日本語ラベル形式
+        if (trimmed.includes('【プロンプト】') || trimmed.includes('【呪文】') || trimmed.includes('【ネガティブ')) {
+            siteSource = 'ちちぷい';
+            let posPart = '';
+            let negPart = '';
+            const lines = trimmed.split('\n');
+            let isNegative = false;
+
+            for (let line of lines) {
+                const lineTrim = line.trim();
+                if (lineTrim === '【プロンプト】' || lineTrim === '【呪文】' || lineTrim === '【正のプロンプト】') {
+                    isNegative = false;
+                    continue;
+                }
+                if (lineTrim.includes('【ネガティブ') || lineTrim === '【除外したい】') {
+                    isNegative = true;
+                    continue;
+                }
+                if (lineTrim.startsWith('【') && lineTrim.endsWith('】')) {
+                    continue;
+                }
+
+                if (isNegative) {
+                    negPart += (negPart ? '\n' : '') + line;
+                } else {
+                    posPart += (posPart ? '\n' : '') + line;
+                }
+            }
+            data.positive = posPart.trim();
+            data.negative = negPart.trim();
+        }
+        // 2. NovelAI 形式
+        else if (trimmed.includes('Negative prompt:') && trimmed.includes('[') && trimmed.includes(']')) {
+            siteSource = 'NovelAI';
+            const negRegex = /\[Negative Prompt:\s*([^\]]+)\]/i;
+            const match = trimmed.match(negRegex);
+            if (match) {
+                data.negative = match[1].trim();
+                data.positive = trimmed.replace(negRegex, '').trim();
+            } else {
+                data.positive = trimmed;
+            }
+        }
+        // 3. 標準 Stable Diffusion WebUI / Civitai 形式
+        else if (trimmed.includes('Steps:') && trimmed.includes('Sampler:')) {
+            siteSource = 'Civitai';
+            const lines = trimmed.split('\n');
+            let settingsIndex = -1;
+            for (let i = lines.length - 1; i >= 0; i--) {
+                if (lines[i].includes('Steps:') && lines[i].includes('Sampler:')) {
+                    settingsIndex = i;
+                    break;
+                }
+            }
+
+            let mainContent = lines;
+            if (settingsIndex !== -1) {
+                const settingsLine = lines[settingsIndex];
+                mainContent = lines.slice(0, settingsIndex);
+
+                const settingsParts = settingsLine.split(',').map(s => s.trim());
+                settingsParts.forEach(part => {
+                    const colonIdx = part.indexOf(':');
+                    if (colonIdx !== -1) {
+                        const key = part.substring(0, colonIdx).trim();
+                        const value = part.substring(colonIdx + 1).trim();
+                        if (key && value) {
+                            data.settings[key] = value;
+                            if (key === 'Model') data.model = value;
+                        }
+                    }
+                });
+            }
+
+            const remainingText = mainContent.join('\n').trim();
+            const negIndicator = 'Negative prompt:';
+            const negIndex = remainingText.indexOf(negIndicator);
+
+            if (negIndex !== -1) {
+                data.positive = remainingText.substring(0, negIndex).trim();
+                data.negative = remainingText.substring(negIndex + negIndicator.length).trim();
+            } else {
+                data.positive = remainingText;
+            }
+        }
+        // 4. その他のシンプル形式
+        else {
+            const lowText = trimmed.toLowerCase();
+            let splitWord = null;
+            if (lowText.includes('negative prompt:')) splitWord = 'negative prompt:';
+            else if (lowText.includes('negative:')) splitWord = 'negative:';
+            else if (lowText.includes('neg:')) splitWord = 'neg:';
+
+            if (splitWord) {
+                const idx = lowText.indexOf(splitWord);
+                data.positive = trimmed.substring(0, idx).trim();
+                data.negative = trimmed.substring(idx + splitWord.length).trim();
+            } else {
+                data.positive = trimmed;
+            }
+        }
+
+        // 自動タグ作成
+        const loraRegex = /<lora:([^:]+):[^>]+>/g;
+        let match;
+        const foundLoras = new Set();
+        while ((match = loraRegex.exec(data.positive)) !== null) {
+            foundLoras.add(match[1]);
+        }
+        foundLoras.forEach(loraName => {
+            data.tags.push({ type: 'lora', name: loraName });
+        });
+
+        if (data.model && data.model !== '手動登録モデル') {
+            data.tags.push({ type: 'model', name: data.model });
+        }
+
+        data.tags.push({ type: 'site', name: siteSource });
+
+        return data;
+    }
+
+    // --- 同期/非同期 保存処理ラッパー ---
+    async function saveToDBSync(item) {
+        await putToDB(item);
+        await reloadDataAndRender();
+    }
+
+    async function reloadDataAndRender() {
+        prompts = await getAllFromDB();
+        renderGrid();
+    }
+
+    // --- UI Grid Rendering ---
+    function renderGrid() {
+        const searchTerm = searchInput.value.toLowerCase();
+        promptGrid.innerHTML = '';
+        
+        let filtered = prompts.filter(p => {
+            if (activeFilter === 'starred' && !p.starred) return false;
+            
+            const matchInPos = (p.positive || '').toLowerCase().includes(searchTerm);
+            const matchInNeg = (p.negative || '').toLowerCase().includes(searchTerm);
+            const matchInModel = (p.model || '').toLowerCase().includes(searchTerm);
+            const matchInMemo = (p.memo || '').toLowerCase().includes(searchTerm);
+            const matchInTags = (p.tags || []).some(t => t.name.toLowerCase().includes(searchTerm));
+            
+            return matchInPos || matchInNeg || matchInModel || matchInMemo || matchInTags;
+        });
+
+        vaultStats.textContent = `${filtered.length} / ${prompts.length} 件の呪文`;
+
+        filtered.sort((a, b) => b.id - a.id);
+
+        if (filtered.length === 0) {
+            promptGrid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 48px; color: #6c7086;">
+                    <svg style="width: 48px; height: 48px; fill: #45475a; margin-bottom: 12px;" viewBox="0 0 24 24">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                    <p style="margin: 0; font-size: 1rem; font-weight: bold;">登録された呪文が見つかりません</p>
+                    <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #585b70;">新しい呪文データや画像を登録してみましょう！</p>
+                </div>
+            `;
+            return;
+        }
+
+        filtered.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'prompt-card';
+
+            const starSvg = p.starred 
+                ? `<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>`
+                : `<path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.37L12 6.1l1.7 4.02 4.38.37-3.32 2.88 1 4.28L12 15.4z"/>`;
+
+            const tagsHtml = (p.tags || []).map(t => `<span class="pill tag-${t.type}">${t.name}</span>`).join('');
+            const modelNameHtml = p.model ? `<span class="card-model">${p.model}</span>` : '手動登録モデル';
+
+            const imageArea = p.image 
+                ? `<div class="card-image-wrapper"><img src="${p.image}" class="card-image" alt="Prompt result"></div>`
+                : `<div class="card-image-wrapper"><div class="card-no-image"><svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div></div>`;
+
+            card.innerHTML = `
+                ${imageArea}
+                <div class="card-controls">
+                    <button class="icon-btn ${p.starred ? 'star-active' : ''}" onclick="toggleStar(event, ${p.id})" title="お気に入り">
+                        <svg viewBox="0 0 24 24">${starSvg}</svg>
+                    </button>
+                    <button class="icon-btn" onclick="quickCopy(event, ${p.id})" title="ポジティブをコピー">
+                        <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                    </button>
+                    <button class="icon-btn delete-btn-card" onclick="deletePrompt(event, ${p.id})" title="削除">
+                        <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="card-meta">
+                        <span>${p.date}</span>
+                        ${modelNameHtml}
+                    </div>
+
+                    <div class="card-text-preview">
+                        <span class="preview-label" style="color:var(--positive);">ポジティブ呪文</span>
+                        <div class="preview-content preview-pos">${escapeHtml(p.positive || "(テキストなし)")}</div>
+                    </div>
+
+                    ${p.memo ? `
+                        <div class="card-memo-indicator">
+                            <svg viewBox="0 0 24 24"><path d="M21 15c0-4.62-3.74-8.44-8.31-8.5C7.96 6.44 4 10.27 4 15c0 2.38.93 4.54 2.45 6.13"/></svg>
+                            ${escapeHtml(p.memo)}
+                        </div>
+                    ` : ''}
+
+                    <div class="card-tags">
+                        ${tagsHtml}
+                    </div>
+                </div>
+            `;
+
+            card.onclick = (e) => {
+                if (!e.target.closest('.icon-btn')) {
+                    openDetailModal(p.id);
+                }
+            };
+
+            promptGrid.appendChild(card);
+        });
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    async function toggleStar(event, id) {
+        event.stopPropagation();
+        const p = prompts.find(item => item.id === id);
+        if (p) {
+            p.starred = !p.starred;
+            await saveToDBSync(p);
+        }
+    }
+
+    function quickCopy(event, id) {
+        event.stopPropagation();
+        const p = prompts.find(item => item.id === id);
+        if (p) {
+            copyToClipboard(p.positive);
+        }
+    }
+
+    async function deletePrompt(event, id) {
+        event.stopPropagation();
+        if (confirm('この呪文をデータベースから削除しますか？')) {
+            await removeFromDB(id);
+            await reloadDataAndRender();
+        }
+    }
+
+    // --- 詳細モーダル制御 ---
+    function openDetailModal(id) {
+        const prompt = prompts.find(p => p.id === id);
+        if (!prompt) return;
+
+        currentEditingId = id;
+        modalDate.textContent = `登録日: ${prompt.date}`;
+        modalModelEdit.value = prompt.model || '';
+        modalPosEdit.value = prompt.positive || '';
+        modalNegEdit.value = prompt.negative || '';
+        modalMemo.value = prompt.memo || '';
+        newTagInput.value = '';
+
+        if (prompt.image) {
+            modalImageView.src = prompt.image;
+            modalImageView.style.display = 'block';
+            modalNoImageView.style.display = 'none';
+        } else {
+            modalImageView.src = '';
+            modalImageView.style.display = 'none';
+            modalNoImageView.style.display = 'flex';
+        }
+
+        renderModalTags(prompt);
+        renderModalSettingsGrid(prompt);
+
+        modal.classList.add('open');
+    }
+
+    function renderModalTags(prompt) {
+        modalTags.innerHTML = '';
+        if (!prompt.tags) prompt.tags = [];
+
+        prompt.tags.forEach(t => {
+            const span = document.createElement('span');
+            span.className = `pill tag-${t.type}`;
+            span.style.display = 'inline-flex';
+            span.style.alignItems = 'center';
+            span.style.gap = '6px';
+            span.textContent = t.name;
+
+            const delBtn = document.createElement('span');
+            delBtn.innerHTML = '&times;';
+            delBtn.style.cursor = 'pointer';
+            delBtn.style.fontWeight = 'bold';
+            delBtn.onclick = () => {
+                prompt.tags = prompt.tags.filter(tg => tg.name !== t.name);
+                renderModalTags(prompt);
+                saveToDBSync(prompt);
+            };
+            span.appendChild(delBtn);
+            modalTags.appendChild(span);
+        });
+    }
+
+    function renderModalSettingsGrid(prompt) {
+        modalSettingsGrid.innerHTML = '';
+        if (!prompt.settings) prompt.settings = {};
+
+        const defaultKeys = ['Steps', 'Sampler', 'CFG scale', 'Seed', 'Size', 'Clip skip', 'Model hash', 'Denoising strength'];
+        
+        defaultKeys.forEach(key => {
+            const val = prompt.settings[key] || '';
+            const box = document.createElement('div');
+            box.className = 'edit-setting-box';
+            box.innerHTML = `
+                <span class="edit-setting-label">${key}</span>
+                <input type="text" class="edit-setting-input" data-key="${key}" value="${val}" placeholder="-">
+            `;
+            modalSettingsGrid.appendChild(box);
+        });
+    }
+
+    // クローズ処理をスマートに一本化
+    async function closeDetailModal() {
+        if (currentEditingId !== null) {
+            // モーダルを閉じるときに必ず最新の状態を自動で保存してあげる超親切設計
+            await saveModalChangesQuiet();
+        }
+        modal.classList.remove('open');
+        currentEditingId = null;
+    }
+
+    // バックグラウンドで音も無く変更をコミットする自動保存処理
+    async function saveModalChangesQuiet() {
+        if (!currentEditingId) return;
+
+        const p = prompts.find(item => item.id === currentEditingId);
+        if (p) {
+            p.model = modalModelEdit.value.trim() || '手動登録モデル';
+            p.positive = modalPosEdit.value.trim();
+            p.negative = modalNegEdit.value.trim();
+            p.memo = modalMemo.value.trim();
+
+            if (!p.settings) p.settings = {};
+            const inputs = modalSettingsGrid.querySelectorAll('.edit-setting-input');
+            inputs.forEach(input => {
+                const key = input.getAttribute('data-key');
+                const value = input.value.trim();
+                if (key) p.settings[key] = value;
+            });
+
+            p.tags = (p.tags || []).filter(t => t.type !== 'model');
+            if (p.model && p.model !== '手動登録モデル') {
+                p.tags.push({ type: 'model', name: p.model });
+            }
+
+            await putToDB(p);
+        }
+        await reloadDataAndRender();
+    }
+
+    // ユーザーが明示的に保存ボタンを押したとき用
+    async function saveModalChanges() {
+        await saveModalChangesQuiet();
+        closeDetailModal();
+        showToast('変更を自動適用しました！');
+    }
+
+    modalImgEditZone.onclick = () => {
+        modalImgFileInput.click();
+    };
+
+    modalImgFileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file || !currentEditingId) return;
+
+        resizeAndCompressImage(file).then((compressed) => {
+            if (compressed) {
+                const p = prompts.find(item => item.id === currentEditingId);
+                if (p) {
+                    p.image = compressed;
+                    modalImageView.src = compressed;
+                    modalImageView.style.display = 'block';
+                    modalNoImageView.style.display = 'none';
+                    saveToDBSync(p);
+                    showToast("画像を更新しました！");
+                }
+            }
+        });
+    };
+
+    const modalImgCol = document.getElementById('modal-img-col');
+    modalImgCol.ondragover = (e) => {
+        e.preventDefault();
+        modalImgEditZone.classList.add('dragover');
+    };
+    modalImgCol.ondragleave = () => {
+        modalImgEditZone.classList.remove('dragover');
+    };
+    modalImgCol.ondrop = (e) => {
+        e.preventDefault();
+        modalImgEditZone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files[0] && currentEditingId) {
+            const file = e.dataTransfer.files[0];
+            resizeAndCompressImage(file).then((compressed) => {
+                if (compressed) {
+                    const p = prompts.find(item => item.id === currentEditingId);
+                    if (p) {
+                        p.image = compressed;
+                        modalImageView.src = compressed;
+                        modalImageView.style.display = 'block';
+                        modalNoImageView.style.display = 'none';
+                        saveToDBSync(p);
+                        showToast("画像を更新しました！");
+                    }
+                }
+            });
+        }
+    };
+
+    // 画像ズーム
+    modalImageView.onclick = () => {
+        if (modalImageView.src) {
+            lightboxImg.src = modalImageView.src;
+            lightbox.classList.add('open');
+        }
+    };
+
+    lightbox.onclick = () => {
+        lightbox.classList.remove('open');
+    };
+
+    // 新規タグ作成
+    addTagBtn.onclick = () => {
+        const newTag = newTagInput.value.trim();
+        if (!newTag || !currentEditingId) return;
+
+        const p = prompts.find(item => item.id === currentEditingId);
+        if (p) {
+            if (!p.tags) p.tags = [];
+            const isDuplicate = p.tags.some(t => t.name.toLowerCase() === newTag.toLowerCase());
+            if (!isDuplicate) {
+                p.tags.push({ type: 'custom', name: newTag });
+                renderModalTags(p);
+                newTagInput.value = '';
+                saveToDBSync(p);
+            }
+        }
+    };
+
+    // --- バックアップ ＆ ロード ---
+    btnExport.onclick = () => {
+        if (prompts.length === 0) {
+            alert('保管庫は現在空です。');
+            return;
+        }
+        const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(prompts, null, 2));
+        const download = document.createElement('a');
+        download.setAttribute("href", str);
+        download.setAttribute("download", `spellbound_crypt_backup_${new Date().toISOString().slice(0, 10)}.json`);
+        document.body.appendChild(download);
+        download.click();
+        download.remove();
+        showToast("バックアップファイルをダウンロードしました！");
+    };
+
+    btnImport.onclick = () => {
+        fileInput.click();
+    };
+
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const imported = JSON.parse(event.target.result);
+                if (Array.isArray(imported)) {
+                    const existingIds = new Set(prompts.map(p => p.id));
+                    let importedCount = 0;
+
+                    for (const item of imported) {
+                        if (item.id && !existingIds.has(item.id)) {
+                            await putToDB(item);
+                            importedCount++;
+                        }
+                    }
+
+                    await reloadDataAndRender();
+                    showToast(`${importedCount} 件のデータを復元・追加しました！`);
+                } else {
+                    alert('ファイルの形式が正しくありません。');
+                }
+            } catch (err) {
+                alert('JSONの解析に失敗しました。');
+            }
+        };
+        reader.readAsText(file);
+        fileInput.value = '';
+    };
+
+    // --- パース＆セーブ ---
+    parseSaveBtn.onclick = async () => {
+        const val = rawInput.value.trim();
+        if (!val && !tempImageData) {
+            alert('プロンプトテキストを入力するか、プレビュー画像を登録してください。');
+            return;
+        }
+
+        const parsed = parsePromptText(val || "(登録テキストなし)");
+        if (parsed) {
+            await putToDB(parsed);
+            await reloadDataAndRender();
+            rawInput.value = '';
+            clearTempImage();
+            showToast('正常に保存されました！');
+        } else {
+            alert('テキストの解析に失敗しました。');
+        }
+    };
+
+    removeTempImgBtn.onclick = (e) => {
+        e.stopPropagation();
+        clearTempImage();
+    };
+
+    // --- 検索とフィルター ---
+    searchInput.oninput = renderGrid;
+
+    filterTabs.forEach(tab => {
+        tab.onclick = () => {
+            filterTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            activeFilter = tab.getAttribute('data-filter');
+            renderGrid();
+        };
+    });
+
+    // 各種ボタンのイベント紐付け
+    modalCloseBtn.onclick = closeDetailModal;
+    modalSaveBtn.onclick = saveModalChanges;
+
+    copyPosBtn.onclick = () => copyToClipboard(modalPosEdit.value);
+    copyNegBtn.onclick = () => copyToClipboard(modalNegEdit.value);
+
+    modal.onclick = (e) => {
+        if (e.target === modal) closeDetailModal();
+    };
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (lightbox.classList.contains('open')) {
+                lightbox.classList.remove('open');
+            } else if (modal.classList.contains('open')) {
+                closeDetailModal();
+            }
+        }
+    });
+
+    // --- システム初期起動 ---
+    async function startApp() {
+        try {
+            await initDB();
+            await migrateLocalStorage();
+            await reloadDataAndRender();
+        } catch (err) {
+            console.error("Failed to initialize database:", err);
+            alert("データベースの接続に失敗しました。プライベートモードなどの設定を確認してください。");
+        }
+    }
+
+    startApp();
+
+</script>
+
+</body>
+</html>
