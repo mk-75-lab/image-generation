@@ -1565,7 +1565,26 @@
                 data.positive = remainingText;
             }
         }
-        // 4. その他のシンプル形式
+        // 4. 改行（空行）区切りのシンプル形式の検出（定番ネガティブワードによる自動判定）
+        else if (trimmed.includes('\n\n') || trimmed.includes('\r\n\r\n')) {
+            const separator = trimmed.includes('\r\n\r\n') ? '\r\n\r\n' : '\n\n';
+            const blocks = trimmed.split(separator);
+            const lastBlock = blocks[blocks.length - 1].trim();
+            const lastBlockLow = lastBlock.toLowerCase();
+            
+            // ネガティブプロンプトで超定番のキーワードリスト
+            const negKeywords = ['low quality', 'lowres', 'worst quality', 'bad anatomy', 'bad hands', 'bad feet', 'normal quality', 'monochrome', 'grayscale', 'ugly', 'poorly drawn', 'panties'];
+            const isNegBlock = negKeywords.some(keyword => lastBlockLow.includes(keyword));
+
+            if (isNegBlock) {
+                data.positive = blocks.slice(0, blocks.length - 1).join(separator).trim();
+                data.negative = lastBlock;
+                siteSource = '空行区切り';
+            } else {
+                data.positive = trimmed;
+            }
+        }
+        // 5. その他のシンプル形式（英語の境界線キーワードによる判定）
         else {
             const lowText = trimmed.toLowerCase();
             let splitWord = null;
